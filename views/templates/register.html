@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <!-- <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    .login-container,
+    .register-container {
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background-color: #fff;
+      width: 400px;
+      background: linear-gradient(to right, #f2f2f2, #f2f2f2, grey);
+      border: none;
+    }
+
+    .login-container h2 {
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      /* display: block; */
+      margin-bottom: 5px;
+    }
+
+    .form-group input {
+      margin-top: 10px;
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .btn-login {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+      height: 50px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-login:hover {
+      background-color: #45a049;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .footer a {
+      color: #4CAF50;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+      color: red;
+    }
+  </style> -->
+  <link href="../css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+
+  <div class="register-container">
+    <h2>Register</h2>
+    <form id="registerForm" action="/register" method="POST">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required>
+      </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="mail" id="email" name="email" placeholder="Enter your email" required
+          pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+      {{if .SuccessMessage}}
+      <p style="color: green" id="successMessage">{{.SuccessMessage}}</p>
+      <p style="color: green" id="countdown"></p>
+      {{end}}
+      {{if .Error}}
+      <div style="color:red;">
+        <ul>
+          {{range .Error}}
+          <li>{{.}}</li>
+          {{end}}
+        </ul>
+      </div>
+      {{end}}
+      <button type="submit" class="btn-login">Register</button>
+    </form>
+    <div class="footer">
+      Already have an account? <a href="/login">Sign in</a>
+    </div>
+  </div>
+  <script>
+    const successMessage = document.getElementById('successMessage');
+    const countdown = document.getElementById('countdown');
+    if (successMessage) {
+      let coundownTime = 5;
+      const interval = setInterval(() => {
+        coundownTime -= 1;
+        countdown.textContent = `Redirecting to login in ${coundownTime} seconds...`;
+        if (coundownTime <= 0) {
+          clearInterval(interval);
+          window.location.href = '/login';
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+
+</html>
