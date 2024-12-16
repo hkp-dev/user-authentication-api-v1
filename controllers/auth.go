@@ -12,6 +12,11 @@ import (
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		http.ServeFile(w, r, "../views/templates/register.html")
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
@@ -24,12 +29,12 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errors := services.ValidateUser(user)
-	if len(errors) > 0 {
+	registrationErrors := services.ValidateUser(user)
+	if len(registrationErrors) > 0 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"errors": errors,
+			"errors": registrationErrors,
 		})
 		return
 	}
@@ -43,6 +48,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Username or email already exists"}`, http.StatusBadRequest)
 		return
 	}
+
 	hashedPassword, err := services.HashPassword(user.Password)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to hash password"}`, http.StatusInternalServerError)
@@ -104,7 +110,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"token":   token,
 	})
 }
-
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -162,14 +167,6 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		"message": "Password updated successfully",
 	})
 }
-
-// func ResetPassword(w http.ResponseWriter, r *http.Request) {
-// 	if r.Method != http.MethodPost {
-// 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
-// 		return
-// 	}
-
-// }
 func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)

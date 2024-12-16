@@ -13,9 +13,11 @@ import (
 )
 
 var (
-	MongoClient    *mongo.Client
-	UserCollection *mongo.Collection
-	once           sync.Once
+	MongoClient        *mongo.Client
+	UserCollection     *mongo.Collection
+	ProductCollection  *mongo.Collection
+	CategoryCollection *mongo.Collection
+	once               sync.Once
 )
 
 func ContextTimeOut(t time.Duration) (context.Context, context.CancelFunc) {
