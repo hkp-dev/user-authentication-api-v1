@@ -41,11 +41,10 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 		"title":   category.Title,
 		"desc":    category.Description,
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
 }
 func GetCategories(w http.ResponseWriter, r *http.Request) {}
 
-func GetProductsByCategory(w http.ResponseWriter, r *http.Request) {}

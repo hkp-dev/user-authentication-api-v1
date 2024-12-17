@@ -27,48 +27,87 @@ func CreateProduct(product models.Product, category models.Category) error {
 	product.ID = primitive.NewObjectID()
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
-	database.CategoryCollection = database.GetCollection("testDB", "categories")
-	_, err := database.CategoryCollection.UpdateMany(
-		context.Background(),
-		bson.M{"_id": bson.M{"$in": product.CategoryID}},
-		bson.M{
-			"$set": bson.M{
-				"product_ids": bson.M{"$ifNull": []primitive.ObjectID{}},
-			},
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("error updating category with product ID: %v", err)
-	}
+
 	database.ProductCollection = database.GetCollection("testDB", "products")
+	err := database.ProductCollection.FindOne(
+		context.Background(),
+		bson.M{"title": product.Title},
+	).Decode(&models.Product{})
+	if err == nil {
+		return fmt.Errorf("product with title %s already exists", product.Title)
+	}
 	_, err = database.ProductCollection.InsertOne(context.Background(), product)
 	if err != nil {
+		return fmt.Errorf("error inserting product: %v", err)
+	}
+
+	err = AddProductToCategory(product.ID, product.CategoryID)
+	if err != nil {
+		return fmt.Errorf("error adding product to category: %v", err)
+	}
+
+	return nil
+}
+func GetAllProductByTitle(title string) ([]models.Product, error) {
+	database.ProductCollection = database.GetCollection("testDB", "products")
+	var products []models.Product
+	productCursor, err := database.ProductCollection.Find(context.Background(), bson.M{"title": title})
+	if err != nil {
+		return nil, err
+	}
+	for productCursor.Next(context.Background()) {
+		var product models.Product
+		err := productCursor.Decode(&product)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
+}
+func GetAllProduct() ([]models.Product, error) {
+	database.ProductCollection = database.GetCollection("testDB", "products")
+	var products []models.Product
+	productCursor, err := database.ProductCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	for productCursor.Next(context.Background()) {
+		var product models.Product
+		err := productCursor.Decode(&product)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+	return products, nil
+}
+func UpdatePriceProduct(productID primitive.ObjectID, price float64) error {
+	database.ProductCollection = database.GetCollection("testDB", "products")
+	_, err := database.ProductCollection.UpdateOne(
+		context.Background(),
+		bson.M{"_id": productID},
+		bson.M{"$set": bson.M{"price": price, "updated_at": time.Now()}},
+	)
+	if err != nil {
 		return err
+	}
+	return nil
+}
+func DeleteProduct(productID primitive.ObjectID) error {
+	database.ProductCollection = database.GetCollection("testDB", "products")
+	_, err := database.ProductCollection.DeleteOne(context.Background(), bson.M{"_id": productID})
+	if err != nil {
+		return fmt.Errorf("error deleting product: %v", err)
 	}
 	database.CategoryCollection = database.GetCollection("testDB", "categories")
 	_, err = database.CategoryCollection.UpdateMany(
 		context.Background(),
-		bson.M{"_id": product.CategoryID},
-		bson.M{
-			"$push": bson.M{"product_ids": product.ID},
-		})
+		bson.M{"product_ids": productID},
+		bson.M{"$pull": bson.M{"product_ids": productID}},
+	)
 	if err != nil {
-		return fmt.Errorf("error updating category with product ID: %v", err)
-	}
-	return nil
-}
-func GetProduct(id primitive.ObjectID) (models.Product, error) {
-	database.ProductCollection = database.GetCollection("testDB", "products")
-	var product models.Product
-	err := database.ProductCollection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&product)
-	return product, err
-}
-func UpdateProduct(product models.Product) error {
-	product.UpdatedAt = time.Now()
-	database.ProductCollection = database.GetCollection("testDB", "products")
-	_, err := database.ProductCollection.UpdateOne(context.Background(), bson.M{"_id": product.ID}, bson.M{"$set": product})
-	if err != nil {
-		return err
+		return fmt.Errorf("error deleting product from categories: %v", err)
 	}
 	return nil
 }
