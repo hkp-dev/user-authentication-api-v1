@@ -33,6 +33,12 @@ func CreateCategory(category models.Category) (*mongo.InsertOneResult, error) {
 	return result, nil
 }
 func UpdateFieldToArray(productID primitive.ObjectID, fieldName string, value interface{}) error {
+	if productID.IsZero() {
+		return fmt.Errorf("product ID is empty")
+	}
+	if fieldName == "" {
+		return fmt.Errorf("field name is empty")
+	}
 	database.CategoryCollection = database.GetCollection("testDB", "categories")
 
 	_, err := database.CategoryCollection.UpdateMany(
@@ -48,6 +54,12 @@ func UpdateFieldToArray(productID primitive.ObjectID, fieldName string, value in
 	return nil
 }
 func DeleteProductInCategory(productID primitive.ObjectID, categoryID primitive.ObjectID) error {
+	if productID.IsZero() {
+		return fmt.Errorf("product ID is empty")
+	}
+	if categoryID.IsZero() {
+		return fmt.Errorf("category ID is empty")
+	}
 	database.CategoryCollection = database.GetCollection("testDB", "categories")
 	_, err := database.CategoryCollection.UpdateOne(
 		context.Background(),
@@ -60,6 +72,12 @@ func DeleteProductInCategory(productID primitive.ObjectID, categoryID primitive.
 	return nil
 }
 func AddProductToCategory(productID primitive.ObjectID, categoryIDs []primitive.ObjectID) error {
+	if categoryIDs == nil {
+		return fmt.Errorf("category IDs are empty")
+	}
+	if productID.IsZero() {
+		return fmt.Errorf("product ID is empty")
+	}
 	err := UpdateFieldToArray(productID, "product_ids", categoryIDs)
 	if err != nil {
 		return err
@@ -79,6 +97,9 @@ func AddProductToCategory(productID primitive.ObjectID, categoryIDs []primitive.
 	return nil
 }
 func GetCategoriesByTitle(title string) (models.Category, error) {
+	if title == "" {
+		return models.Category{}, fmt.Errorf("category title is empty")
+	}
 	database.CategoryCollection = database.GetCollection("testDB", "categories")
 	var category models.Category
 	err := database.CategoryCollection.FindOne(context.Background(), bson.M{"title": title}).Decode(&category)
@@ -91,6 +112,9 @@ func GetCategoriesByTitle(title string) (models.Category, error) {
 	return category, nil
 }
 func GetProductsByCategoryTitle(title string) ([]models.Product, error) {
+	if title == "" {
+		return nil, fmt.Errorf("category title is empty")
+	}
 	database.ProductCollection = database.GetCollection("testDB", "products")
 	var products []models.Product
 	cursor, err := database.ProductCollection.Find(context.Background(), bson.M{"category": title})
@@ -107,4 +131,44 @@ func GetProductsByCategoryTitle(title string) ([]models.Product, error) {
 		products = append(products, product)
 	}
 	return products, nil
+}
+func GetAllCategory() ([]models.Category, error) {
+	database.GetCollection("testDB", "categories")
+	var categories []models.Category
+	categoriesCursor, err := database.CategoryCollection.Find(
+		context.Background(),
+		bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	for categoriesCursor.Next(context.Background()) {
+		var category models.Category
+		err := categoriesCursor.Decode(category)
+		if err != nil {
+			return nil, err
+		}
+		categories = append(categories, category)
+	}
+	return categories, nil
+}
+func DeleteCategory(categoryID primitive.ObjectID) error {
+	if categoryID.IsZero() {
+		return fmt.Errorf("category ID is empty")
+	}
+
+	database.CategoryCollection = database.GetCollection("testDB", "categories")
+	_, err := database.CategoryCollection.Find(context.Background(), bson.M{"_id": categoryID})
+	if err == nil {
+		return fmt.Errorf("category with ID %s not found", categoryID)
+	}
+	_, err = database.CategoryCollection.DeleteOne(context.Background(), bson.M{"_id": categoryID})
+	if err != nil {
+		return fmt.Errorf("error deleting category: %v", err)
+	}
+	database.ProductCollection = database.GetCollection("testDB", "products")
+	_, err = database.ProductCollection.DeleteMany(context.Background(), bson.M{"category_id": categoryID})
+	if err != nil {
+		return fmt.Errorf("error deleting products in category: %v", err)
+	}
+	return nil
 }

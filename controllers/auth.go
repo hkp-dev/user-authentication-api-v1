@@ -12,10 +12,10 @@ import (
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		http.ServeFile(w, r, "../views/templates/register.html")
-		return
-	}
+	// if r.Method == http.MethodGet {
+	// 	http.ServeFile(w, r, "../views/templates/register.html")
+	// 	return
+	// }
 
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -97,7 +97,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Invalid password"}`, http.StatusUnauthorized)
 		return
 	}
-
+	if !services.CheckStatusUser(user) {
+		http.Error(w, `{"error": "User is blocked"}`, http.StatusUnauthorized)
+		return
+	}
 	token, err := utils.GenerateJWT(user)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to generate token"}`, http.StatusInternalServerError)

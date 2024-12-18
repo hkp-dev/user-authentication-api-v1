@@ -22,38 +22,40 @@ func LogRequestMiddleware(next http.Handler) http.Handler {
 
 		start := time.Now()
 		log.Printf("\n ==> Request Method: %s\n ==> URL: %s\n ==> Time: %s\n", r.Method, r.URL.Path, start.Format(time.RFC3339))
+
 		next.ServeHTTP(customWriter, r)
+
 		duration := time.Since(start)
 		log.Printf("\n ==> Response Status: %d \n ==> Method: %s\n ==> URL: %s\n ==> Duration: %v\n", customWriter.StatusCode, r.Method, r.URL.Path, duration)
 	})
 }
-func RequireAdminAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		header := r.Header.Get("Authorization")
 
-		if header == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+//	func RequireAuth(next http.Handler) http.Handler {
+//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//			_, err := utils.ValidateJWT(r)
+//			if err != nil {
+//				http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
+//				return
+//			}
+//			next.ServeHTTP(w, r)
+//		})
+//	}
+func CheckRoleAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, err := utils.ValidateJWT(r)
 		if err != nil {
 			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
 			return
 		}
-		if user.Role != "admin" || user.Role != "user" {
-			http.Error(w, `{"error": "You don't have permission"}`, http.StatusUnauthorized)
+		if user.Role != "admin" {
+			http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
 		next.ServeHTTP(w, r)
 	})
 }
-func RequireUserAuth(next http.Handler) http.Handler {
+func CheckRoleUser(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		header := r.Header.Get("Authorization")
-		if header == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
 		user, err := utils.ValidateJWT(r)
 		if err != nil {
 			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
@@ -63,7 +65,6 @@ func RequireUserAuth(next http.Handler) http.Handler {
 			http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
-
 		next.ServeHTTP(w, r)
 	})
 }

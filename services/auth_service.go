@@ -28,7 +28,6 @@ func ValidateUser(user models.User) []string {
 	}
 	return errors
 }
-
 func CheckUserExists(user models.User) (bool, error) {
 	database.UserCollection = database.GetCollection("testDB", "users")
 	filter := bson.M{"$or": []interface{}{
@@ -42,7 +41,6 @@ func CheckUserExists(user models.User) (bool, error) {
 	}
 	return true, err
 }
-
 func CreateUser(user models.User) error {
 	database.UserCollection = database.GetCollection("testDB", "users")
 	user.ID = primitive.NewObjectID()
@@ -52,14 +50,21 @@ func CreateUser(user models.User) error {
 	_, err := database.UserCollection.InsertOne(context.Background(), user)
 	return err
 }
-
+func CheckStatusUser(user models.User) bool {
+	database.UserCollection = database.GetCollection("testDB", "users")
+	filter := bson.M{"_id": user.ID}
+	err := database.UserCollection.FindOne(context.Background(), filter).Decode(&user)
+	if user.Locked {
+		return false
+	}
+	return err == nil
+}
 func FindUserByUsername(username string) (models.User, error) {
 	var user models.User
 	database.UserCollection = database.GetCollection("testDB", "users")
 	err := database.UserCollection.FindOne(context.Background(), bson.M{"username": username}).Decode(&user)
 	return user, err
 }
-
 func ComparePassword(password string, user models.User) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	return err == nil
