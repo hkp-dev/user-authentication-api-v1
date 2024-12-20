@@ -86,40 +86,36 @@ func ValidateJWT(r *http.Request) (models.User, error) {
 		return models.User{}, fmt.Errorf("Locked status not found in token")
 	}
 
-	// createdAtUnix, ok := claims["created_at"].(float64)
-	// if !ok {
-	// 	return models.User{}, fmt.Errorf("Created_at not found in token")
-	// }
-	// createdAt := time.Unix(int64(createdAtUnix), 0)
-
-	// updatedAtUnix, ok := claims["updated_at"].(float64)
-	// if !ok {
-	// 	return models.User{}, fmt.Errorf("Updated_at not found in token")
-	// }
-	// updatedAt := time.Unix(int64(updatedAtUnix), 0)
-
-	// otp, ok := claims["otp"].(string)
-	// if !ok {
-	// 	return models.User{}, fmt.Errorf("OTP not found in token")
-	// }
-
-	// otpExpiryUnix, ok := claims["otp_expiry"].(float64)
-	// if !ok {
-	// 	return models.User{}, fmt.Errorf("OTP expiry not found in token")
-	// }
-	// otpExpiry := time.Unix(int64(otpExpiryUnix), 0)
-
 	user := models.User{
 		ID:       userIDObj,
 		Username: username,
 		Email:    email,
 		Role:     role,
 		Locked:   locked,
-		// CreatedAt: createdAt,
-		// UpdatedAt: updatedAt,
-		// OTP:       otp,
-		// OTPExpiry: otpExpiry,
 	}
 
 	return user, nil
 }
+
+// createdAtUnix, ok := claims["created_at"].(float64)
+// if !ok {
+// 	return models.User{}, fmt.Errorf("Created_at not found in token")
+// }
+// createdAt := time.Unix(int64(createdAtUnix), 0)
+
+// updatedAtUnix, ok := claims["updated_at"].(float64)
+// if !ok {
+// 	return models.User{}, fmt.Errorf("Updated_at not found in token")
+// }
+// updatedAt := time.Unix(int64(updatedAtUnix), 0)
+
+// otp, ok := claims["otp"].(string)
+// if !ok {
+// 	return models.User{}, fmt.Errorf("OTP not found in token")
+// }
+
+// otpExpiryUnix, ok := claims["otp_expiry"].(float64)
+// if !ok {
+// 	return models.User{}, fmt.Errorf("OTP expiry not found in token")
+// }
+// otpExpiry := time.Unix(int64(otpExpiryUnix), 0)

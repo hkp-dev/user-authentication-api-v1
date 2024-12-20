@@ -1,7 +1,10 @@
-package net
+package middleware
 
 import (
+	"app/database"
 	"app/utils"
+	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -10,45 +13,60 @@ import (
 type CustomResponseWriter struct {
 	http.ResponseWriter
 	StatusCode int
+	Body       []byte
+}
+
+type LogEntry struct {
+	Method   string `json:"method"`
+	URL      string `json:"url"`
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
+	Status   int    `json:"status"`
+	Duration string `json:"duration"`
+	Time     string `json:"time"`
+	Request  string `json:"request"`
+	Response string `json:"response"`
 }
 
 func (rw *CustomResponseWriter) WriteHeader(statusCode int) {
 	rw.StatusCode = statusCode
 	rw.ResponseWriter.WriteHeader(statusCode)
 }
-func LogRequestMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+func LogRequestMiddleware(next http.HandlerFunc) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		customWriter := &CustomResponseWriter{ResponseWriter: w, StatusCode: http.StatusOK}
-
 		start := time.Now()
-		log.Printf("\n ==> Request Method: %s\n ==> URL: %s\n ==> Time: %s\n", r.Method, r.URL.Path, start.Format(time.RFC3339))
-		next.ServeHTTP(customWriter, r)
-		duration := time.Since(start)
-		log.Printf("\n ==> Response Status: %d \n ==> Method: %s\n ==> URL: %s\n ==> Duration: %v\n", customWriter.StatusCode, r.Method, r.URL.Path, duration)
-	})
-}
-func RequireAdminAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		header := r.Header.Get("Authorization")
 
-		if header == "" {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
+		next.ServeHTTP(customWriter, r)
+
+		duration := time.Since(start)
+		user, _ := utils.ValidateJWT(r)
+
+		logEntry := LogEntry{
+			Method:   r.Method,
+			URL:      r.URL.Path,
+			Status:   customWriter.StatusCode,
+			Duration: duration.String(),
+			Time:     start.Format(time.RFC3339),
+			Request:  r.RequestURI,
+			Response: string(customWriter.Body),
 		}
-		user, err := utils.ValidateJWT(r)
+		logEntry.UserID = user.ID.Hex()
+		logEntry.Username = user.Username
+		logEntry.Request = r.RequestURI
+		logEntry.Response = string(customWriter.Body)
+		logJSON, err := json.MarshalIndent(logEntry, "", "  ")
 		if err != nil {
-			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
+			log.Printf("Error encoding log to JSON: %v", err)
 			return
 		}
-		if user.Role != "admin" || user.Role != "user" {
-			http.Error(w, `{"error": "You don't have permission"}`, http.StatusUnauthorized)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+		log.Println(string(logJSON))
+	}
 }
-func RequireUserAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+func RequireAdminAuth(next http.HandlerFunc) func(w http.ResponseWriter, r *http.Request) {
+	Func := func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if header == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -59,11 +77,44 @@ func RequireUserAuth(next http.Handler) http.Handler {
 			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
 			return
 		}
-		if user.Role != "user" {
+		_, err = database.UserCollection.Find(context.Background(), user)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
+			return
+		}
+		if user.Role == "admin" {
+			next.ServeHTTP(w, r)
+		} else {
 			http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
+	}
+	return LogRequestMiddleware(Func)
+}
 
-		next.ServeHTTP(w, r)
-	})
+func RequireUserAuth(next http.HandlerFunc) func(w http.ResponseWriter, r *http.Request) {
+	Func := func(w http.ResponseWriter, r *http.Request) {
+		header := r.Header.Get("Authorization")
+		if header == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		user, err := utils.ValidateJWT(r)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
+			return
+		}
+		_, err = database.UserCollection.Find(context.Background(), user)
+		if err != nil {
+			http.Error(w, `{"error": "`+err.Error()+`"}`, http.StatusUnauthorized)
+			return
+		}
+		if user.Role == "user" || user.Role == "admin" {
+			next.ServeHTTP(w, r)
+		} else {
+			http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+	}
+	return LogRequestMiddleware(Func)
 }

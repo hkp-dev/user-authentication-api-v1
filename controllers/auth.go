@@ -12,11 +12,6 @@ import (
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	// if r.Method == http.MethodGet {
-	// 	http.ServeFile(w, r, "../views/templates/register.html")
-	// 	return
-	// }
-
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
@@ -55,18 +50,25 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.Password = string(hashedPassword)
-
-	err = services.CreateUser(user)
+	var cart models.Cart
+	err = services.CreateUser(&user, &cart)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to create user"}`, http.StatusInternalServerError)
 		return
 	}
 
+	err = services.CreateCart(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Registration successful! You can now log in on" + user.Username,
+		"message": "Registration successful! You can now log in on " + user.Username,
 	})
 }
+
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -92,7 +94,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
+	if user.Locked {
+		http.Error(w, `{"error": "user has been locked"}`, http.StatusBadRequest)
+		return
+	}
 	if !services.ComparePassword(credentials.Password, user) {
 		http.Error(w, `{"error": "Invalid password"}`, http.StatusUnauthorized)
 		return

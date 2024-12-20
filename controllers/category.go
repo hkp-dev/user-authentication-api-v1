@@ -46,24 +46,38 @@ func CreateCategory(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
 }
-func GetCategories(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
-		return
-	}
-	categories, err := services.GetAllCategory()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	response := map[string]interface{}{
-		"message":    "Categories retrieved successfully",
-		"categories": categories,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
+
+// func GetAllProducts(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodGet { // Use GET instead of POST
+// 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+// 		return
+// 	}
+
+// 	products, err := services.GetAllProduct()
+// 	if err != nil {
+// 		log.Printf("Error retrieving products: %v", err)
+// 		http.Error(w, `{"error": "Internal Server Error"}`, http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	if len(products) == 0 {
+// 		w.Header().Set("Content-Type", "application/json")
+// 		w.WriteHeader(http.StatusNotFound)
+// 		json.NewEncoder(w).Encode(map[string]string{
+// 			"message": "No products found",
+// 		})
+// 		return
+// 	}
+
+// 	response := map[string]interface{}{
+// 		"message":  "All products retrieved successfully",
+// 		"products": products,
+// 	}
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(http.StatusOK)
+// 	json.NewEncoder(w).Encode(response)
+// }
+
 func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
@@ -92,4 +106,23 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Category with ID " + input.ID + " deleted successfully",
 	})
+}
+func GetAllCategory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+		return
+	}
+	var cates []models.Category
+	cates, err := services.GetAllCategory()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	response := map[string]interface{}{
+		`message`: `Get Product Successfully`,
+		`cates`:   cates,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

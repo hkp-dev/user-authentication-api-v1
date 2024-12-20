@@ -48,6 +48,15 @@ func CreateProduct(product models.Product, category models.Category) error {
 
 	return nil
 }
+func GetProductByID(id primitive.ObjectID) (models.Product, error) {
+	database.ProductCollection = database.GetCollection("testDB", "products")
+	var product models.Product
+	err := database.ProductCollection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&product)
+	if err != nil {
+		return models.Product{}, err
+	}
+	return product, nil
+}
 func GetAllProductByTitle(title string) ([]models.Product, error) {
 	database.ProductCollection = database.GetCollection("testDB", "products")
 	var products []models.Product
@@ -72,13 +81,17 @@ func GetAllProduct() ([]models.Product, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer productCursor.Close(context.Background())
 	for productCursor.Next(context.Background()) {
 		var product models.Product
 		err := productCursor.Decode(&product)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Cursor decode error: %w", err)
 		}
 		products = append(products, product)
+	}
+	if err = productCursor.Err(); err != nil {
+		return nil, fmt.Errorf("Cursor iteration error: %w", err)
 	}
 	return products, nil
 }
@@ -111,3 +124,99 @@ func DeleteProduct(productID primitive.ObjectID) error {
 	}
 	return nil
 }
+
+// func AddProductToCart(userID, productID primitive.ObjectID, quantity int) error {
+// 	cartCollection := database.GetCollection("testDB", "carts")
+// 	productCollection := database.GetCollection("testDB", "products")
+// 	userCollection := database.GetCollection("testDB", "users")
+// 	var product models.Product
+
+// 	// Find product user wants to add
+// 	err := productCollection.FindOne(context.Background(), bson.M{"_id": productID}).Decode(&product)
+// 	if err != nil {
+// 		return fmt.Errorf("product not found: %v", err)
+// 	}
+
+// 	// Check quantity
+// 	if product.Stock < quantity {
+// 		return fmt.Errorf("not enough stock for product: %s", product.Title)
+// 	}
+
+// 	// Find the user's cart
+// var cart models.Cart
+// err = cartCollection.FindOne(context.Background(), bson.M{"user_id": userID}).Decode(&cart)
+// if err != nil {
+// 	// If cart does not exist, create a new cart for the user
+// 	if err == mongo.ErrNoDocuments {
+// 		newCart := models.Cart{
+// 			ID:        primitive.NewObjectID(),
+// 			UserID:    userID,
+// 			Products:  []models.Product{{ID: product.ID, Title: product.Title, Description: product.Description, Price: product.Price, Quantity: quantity}},
+// 			CreatedAt: time.Now(),
+// 			UpdatedAt: time.Now(),
+// 		}
+// 		_, insertErr := cartCollection.InsertOne(context.Background(), newCart)
+// 		if insertErr != nil {
+// 			return fmt.Errorf("failed to create new cart: %v", insertErr)
+// 		}
+// 		return nil
+// 	}
+// 	return fmt.Errorf("failed to query cart: %v", err)
+// }
+// 	// Check if product already exists in cart
+// 	productExists := false
+// 	for i, p := range cart.Products {
+// 		if p.ID == productID {
+// 			cart.Products[i].Quantity += quantity
+// 			productExists = true
+// 			break
+// 		}
+// 	}
+
+// 	// If product doesn't exist, add it to the cart
+// 	if !productExists {
+// 		cart.Products = append(cart.Products, models.Product{
+// 			ID:    product.ID,
+// 			Title: product.Title,
+// 			// Category:    GetCategoriesByTitle(product.Title),
+// 			Description: product.Description,
+// 			Price:       product.Price,
+// 			Quantity:    quantity,
+// 		})
+// 	}
+
+// 	// Update cart with the new product details
+// 	cart.UpdatedAt = time.Now()
+// 	_, updateErr := cartCollection.UpdateOne(
+// 		context.Background(),
+// 		bson.M{"_id": cart.ID},
+// 		bson.M{"$set": bson.M{
+// 			"products":   cart.Products,
+// 			"updated_at": cart.UpdatedAt,
+// 		}},
+// 	)
+// 	if updateErr != nil {
+// 		return fmt.Errorf("failed to update cart: %v", updateErr)
+// 	}
+
+// 	// Update product stock
+// 	_, stockUpdateErr := productCollection.UpdateOne(
+// 		context.Background(),
+// 		bson.M{"_id": productID},
+// 		bson.M{"$inc": bson.M{"stock": -quantity}},
+// 	)
+// 	if stockUpdateErr != nil {
+// 		return fmt.Errorf("failed to update product stock: %v", stockUpdateErr)
+// 	}
+// 	_, cartUserUpdatedErr := userCollection.UpdateOne(
+// 		context.Background(),
+// 		bson.M{"_id": userID},
+// 		bson.M{"$set": bson.M{
+// 			"cart_id": cart.ID,
+// 		}},
+// 	)
+// 	if cartUserUpdatedErr != nil {
+// 		return fmt.Errorf("failed to update cart id for user %v", cartUserUpdatedErr)
+// 	}
+// 	return nil
+// }

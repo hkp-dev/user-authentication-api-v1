@@ -33,7 +33,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create collection: %v", err)
 	}
+	err = database.CreateCollection("testDB", "carts", &options.CreateCollectionOptions{})
+	if err != nil {
+		log.Fatalf("Failed to create collection: %v", err)
+	}
 	routes.AddRoutes()
+
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal("Error starting server:", err)
 	}

@@ -17,6 +17,7 @@ var (
 	UserCollection     *mongo.Collection
 	ProductCollection  *mongo.Collection
 	CategoryCollection *mongo.Collection
+	CartCollection     *mongo.Collection
 	once               sync.Once
 )
 

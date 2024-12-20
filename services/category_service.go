@@ -23,6 +23,24 @@ func ValidateCategory(category models.Category) []string {
 	}
 	return errors
 }
+func GetCategoryByID(categoryID primitive.ObjectID) (models.Category, error) {
+	database.CategoryCollection = database.GetCollection("testDB", "categories")
+	var category models.Category
+	err := database.CategoryCollection.FindOne(context.Background(), bson.M{"_id": categoryID}).Decode(&category)
+	if err != nil {
+		return models.Category{}, err
+	}
+	return category, nil
+}
+func CheckCategoryExists(title string) (bool, error) {
+	database.CategoryCollection = database.GetCollection("testDB", "categories")
+	var category models.Category
+	err := database.CategoryCollection.FindOne(context.Background(), bson.M{"title": title}).Decode(&category)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
 func CreateCategory(category models.Category) (*mongo.InsertOneResult, error) {
 	database.CategoryCollection = database.GetCollection("testDB", "categories")
 	category.ID = primitive.NewObjectID()

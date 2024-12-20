@@ -28,6 +28,15 @@ func ValidateUser(user models.User) []string {
 	}
 	return errors
 }
+func GetUserByID(userID primitive.ObjectID) (models.User, error) {
+	database.UserCollection = database.GetCollection("testDB", "users")
+	var user models.User
+	err := database.UserCollection.FindOne(context.Background(), bson.M{"_id": userID}).Decode(&user)
+	if err != nil {
+		return models.User{}, err
+	}
+	return user, err
+}
 func CheckUserExists(user models.User) (bool, error) {
 	database.UserCollection = database.GetCollection("testDB", "users")
 	filter := bson.M{"$or": []interface{}{
@@ -41,12 +50,17 @@ func CheckUserExists(user models.User) (bool, error) {
 	}
 	return true, err
 }
-func CreateUser(user models.User) error {
+func CreateUser(user *models.User, cart *models.Cart) error {
 	database.UserCollection = database.GetCollection("testDB", "users")
 	user.ID = primitive.NewObjectID()
-	user.Role = "user"
+	if user.Email == "admin@gmail.com" {
+		user.Role = "admin"
+	} else {
+		user.Role = "user"
+	}
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
+	user.CartID = cart.ID
 	_, err := database.UserCollection.InsertOne(context.Background(), user)
 	return err
 }

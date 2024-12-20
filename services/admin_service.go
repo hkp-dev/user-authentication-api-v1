@@ -65,5 +65,10 @@ func DeleteUser(id primitive.ObjectID) error {
 	if err != nil {
 		return fmt.Errorf("error deleting user: %v", err)
 	}
+	database.CartCollection = database.GetCollection("testDB", "cart")
+	_, err = database.CartCollection.DeleteOne(context.Background(), bson.M{"user_id": id})
+	if err != nil {
+		return fmt.Errorf("error deleting cart of user: %v", err)
+	}
 	return nil
 }

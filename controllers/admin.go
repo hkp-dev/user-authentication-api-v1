@@ -59,7 +59,7 @@ func UnlockUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "User with ID " + input.ID + " unlocked successfully",
+		"message": "User unlocked successfully",
 	})
 }
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
