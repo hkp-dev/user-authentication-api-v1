@@ -5,6 +5,7 @@ import (
 	"app/services"
 	"app/utils"
 	"encoding/json"
+	"html/template"
 	"net/http"
 	"time"
 
@@ -12,6 +13,19 @@ import (
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		tmpl, err := template.ParseFiles("views/templates/register.html")
+		if err != nil {
+			http.Error(w, `{"error": "Failed to parse template"}`, http.StatusInternalServerError)
+			return
+		}
+		err = tmpl.Execute(w, nil)
+		if err != nil {
+			http.Error(w, `{"error": "Failed to execute template"}`, http.StatusInternalServerError)
+			return
+		}
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
@@ -70,6 +84,19 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		tmpl, err := template.ParseFiles("views/templates/login.html")
+		if err != nil {
+			http.Error(w, `{"error": "Failed to parse template"}`, http.StatusInternalServerError)
+			return
+		}
+		err = tmpl.Execute(w, nil)
+		if err != nil {
+			http.Error(w, `{"error": "Failed to execute template"}`, http.StatusInternalServerError)
+			return
+		}
+		return
+	}
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return

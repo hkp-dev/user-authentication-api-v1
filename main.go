@@ -38,7 +38,8 @@ func main() {
 		log.Fatalf("Failed to create collection: %v", err)
 	}
 	routes.AddRoutes()
-
+	fs := http.FileServer(http.Dir("views/"))
+	http.Handle("/", fs)
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal("Error starting server:", err)
 	}

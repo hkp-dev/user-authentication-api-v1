@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"app/controllers"
 	"app/database"
+	"app/models"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -17,25 +18,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type User struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	Username  string             `bson:"username" json:"username" validate:"required,min=3,max=30"`
-	Email     string             `bson:"email" json:"email" validate:"required,email"`
-	Password  string             `bson:"password" json:"password" validate:"required,min=6"`
-	Locked    bool               `bson:"locked" json:"locked"`
-	Role      string             `bson:"role" json:"role"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
-	OTP       string             `bson:"otp" json:"otp"`
-	OTPExpiry time.Time          `bson:"otp_expiry" json:"otp_expiry"`
-	CartID    primitive.ObjectID `bson:"cart_id" json:"card_id"`
+func AddUserBeforeTest() (models.User, error) {
+	userCollection := database.GetCollection("testDB", "users")
+	user := models.User{
+		ID:        primitive.NewObjectID(),
+		Username:  "testUser",
+		Email:     "testEmail",
+		Password:  "testPassword",
+		Locked:    false,
+		Role:      "user",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	_, err := userCollection.InsertOne(context.Background(), user)
+	if err != nil {
+		log.Fatalf("Failed to insert test user: %v", err)
+	}
+	return user, nil
 }
-
-//	func AddUserAfterTest(user models.User) error {
-//		user = models.User{
-//			ID: primitive.NewObjectID(),
-//		}
-//	}
 func DeleteUserAfterTest(userID primitive.ObjectID) error {
 	userCollection := database.GetCollection("testDB", "users")
 	_, err := userCollection.DeleteOne(context.Background(), bson.M{"_id": userID})
@@ -56,17 +56,11 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 func TestLockUser(t *testing.T) {
-	userCollection := database.GetCollection("testDB", "users")
-	userID := primitive.NewObjectID()
-	_, err := userCollection.InsertOne(context.Background(), bson.M{
-		"_id":     userID,
-		"locked":  false,
-		"created": time.Now(),
-	})
+	user, err := AddUserBeforeTest()
 	if err != nil {
-		t.Fatalf("Failed to insert test user: %v", err)
+		t.Fatalf("Failed to add user before test: %v", err)
 	}
-	reqBody := map[string]primitive.ObjectID{"id": userID}
+	reqBody := map[string]primitive.ObjectID{"id": user.ID}
 	jsonBody, _ := json.Marshal(reqBody)
 	req := httptest.NewRequest(http.MethodPost, "/admin/unlock-user", bytes.NewReader(jsonBody))
 	w := httptest.NewRecorder()
@@ -83,7 +77,7 @@ func TestLockUser(t *testing.T) {
 	if response["message"] != "User locked successfully" {
 		t.Errorf("Expected message 'User locked successfully', got %v", response["message"])
 	}
-	err = DeleteUserAfterTest(userID)
+	err = DeleteUserAfterTest(user.ID)
 	if err != nil {
 		t.Errorf("Failed to delete user after test: %v", err)
 	}
