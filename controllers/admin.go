@@ -80,6 +80,11 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to delete user"}`, http.StatusInternalServerError)
 		return
 	}
+	err = services.DeleteCart(input.ID)
+	if err != nil {
+		http.Error(w, `{"error": "Failed to delete cart"}`, http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{

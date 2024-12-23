@@ -58,9 +58,9 @@ func CreateUser(user *models.User, cart *models.Cart) error {
 	} else {
 		user.Role = "user"
 	}
+	user.Address = []models.Address{}
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
-	user.CartID = cart.ID
 	_, err := database.UserCollection.InsertOne(context.Background(), user)
 	return err
 }

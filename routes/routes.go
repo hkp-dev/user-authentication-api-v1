@@ -13,7 +13,6 @@ func AddRoutes() {
 }
 
 func RoutesAdmin() {
-
 	//product
 	http.HandleFunc("/admin/add-products", mdware.RequireAdminAuth(controllers.CreateProduct))
 	http.HandleFunc("/admin/update-price-product", mdware.RequireAdminAuth(controllers.UpdatePriceProduct))
@@ -32,7 +31,9 @@ func RoutesUser() {
 	http.HandleFunc("/user/get-all-products", mdware.RequireUserAuth(controllers.GetAllProducts))
 	http.HandleFunc("/user/get-product-by-category", mdware.RequireUserAuth(controllers.GetProductsByCategory))
 	http.HandleFunc("/user/get-all-products-by-title", mdware.RequireUserAuth(controllers.GetAllProductsByTitle))
-	// http.HandleFunc("/user/add-product-to-cart", mdware.RequireUserAuth(controllers.AddProductToCart))
+	http.HandleFunc("/user/add-product-to-cart", mdware.RequireUserAuth(controllers.AddProductToCart))
+	http.HandleFunc("/user/get-cart", mdware.RequireUserAuth(controllers.GetCart))
+	http.HandleFunc("/user/remove-product-from-cart", mdware.RequireUserAuth(controllers.RemoveProductFromCart))
 }
 func RoutesPublic() {
 	http.HandleFunc("/register", mdware.LogRequestMiddleware(controllers.Register))

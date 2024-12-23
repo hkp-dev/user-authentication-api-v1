@@ -98,7 +98,7 @@ func DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	err = services.DeleteCategory(cateID)
 	if err != nil {
-		http.Error(w, `{"error": "Failed to delete category"}`, http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")

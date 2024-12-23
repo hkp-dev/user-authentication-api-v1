@@ -110,6 +110,10 @@ func RequireUserAuth(next http.HandlerFunc) func(w http.ResponseWriter, r *http.
 			return
 		}
 		if user.Role == "user" || user.Role == "admin" {
+			if user.Locked {
+				http.Error(w, `{"error": "User is locked"}`, http.StatusUnauthorized)
+				return
+			}
 			next.ServeHTTP(w, r)
 		} else {
 			http.Error(w, `{"error": "Unauthorized"}`, http.StatusUnauthorized)

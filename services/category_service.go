@@ -151,7 +151,7 @@ func GetProductsByCategoryTitle(title string) ([]models.Product, error) {
 	return products, nil
 }
 func GetAllCategory() ([]models.Category, error) {
-	database.GetCollection("testDB", "categories")
+	database.CategoryCollection = database.GetCollection("testDB", "categories")
 	var categories []models.Category
 	categoriesCursor, err := database.CategoryCollection.Find(
 		context.Background(),

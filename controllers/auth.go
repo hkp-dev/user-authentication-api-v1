@@ -30,14 +30,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
 		return
 	}
-
+	//read body request from client
 	var user models.User
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		http.Error(w, `{"error": "Invalid JSON"}`, http.StatusBadRequest)
 		return
 	}
-
+	//validate user data from client
 	registrationErrors := services.ValidateUser(user)
 	if len(registrationErrors) > 0 {
 		w.Header().Set("Content-Type", "application/json")
@@ -48,6 +48,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// check if username or email already exists
 	exists, err := services.CheckUserExists(user)
 	if err != nil {
 		http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
@@ -57,12 +58,13 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Username or email already exists"}`, http.StatusBadRequest)
 		return
 	}
-
+	//hash password
 	hashedPassword, err := services.HashPassword(user.Password)
 	if err != nil {
 		http.Error(w, `{"error": "Failed to hash password"}`, http.StatusInternalServerError)
 		return
 	}
+	//create user with cart_id
 	user.Password = string(hashedPassword)
 	var cart models.Cart
 	err = services.CreateUser(&user, &cart)
@@ -70,19 +72,18 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "Failed to create user"}`, http.StatusInternalServerError)
 		return
 	}
-
+	//create cart with user_id
 	err = services.CreateCart(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	//send response with message to client
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Registration successful! You can now log in on " + user.Username,
 	})
 }
-
 func Login(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		tmpl, err := template.ParseFiles("views/templates/login.html")
@@ -284,5 +285,12 @@ func VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "Password reset successfully",
+	})
+}
+func Logout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Del("Authorization")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Logout successfully",
 	})
 }
